@@ -37,7 +37,7 @@ def parse_args(argv=None):
     p = argparse.ArgumentParser(description="Clean an Excel file (drop empty rows, optional fill).")
     p.add_argument("--input", "-i", default="input.xlsx", help="Input Excel file (default: input.xlsx)")
     p.add_argument("--output", "-o", default="cleaned_output.xlsx", help="Output Excel file")
-    p.add_argument("--sheet", "-s", default=None, help="Sheet name or index (passed to pandas.read_excel)")
+    p.add_argument("--sheet", "-s", default=None, help="Sheet name or index")
     p.add_argument(
         "--fill-method",
         "-f",
