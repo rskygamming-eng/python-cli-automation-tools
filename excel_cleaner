@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+"""
+excel_cleaner.py
+Client-ready Excel cleaner with fill-method option.
+
+Usage:
+    python excel_cleaner.py --input invoices.xlsx --output invoices_cleaned.xlsx --fill-method ffill
+"""
+from pathlib import Path
+import argparse
+import logging
+import sys
+from typing import Optional
+
+import pandas as pd
+
+LOG = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+
+def clean_df(df: pd.DataFrame, fill_method: Optional[str] = "ffill") -> pd.DataFrame:
+    """
+    Basic cleaning pipeline.
+    - drop fully-empty rows
+    - optionally forward/backward fill or leave as-is
+    """
+    df = df.dropna(how="all")
+    if fill_method == "ffill":
+        df = df.fillna(method="ffill")
+    elif fill_method == "bfill":
+        df = df.fillna(method="bfill")
+    # if fill_method == "none", do nothing
+    return df
+
+
+def parse_args(argv=None):
+    p = argparse.ArgumentParser(description="Clean an Excel file (drop empty rows, optional fill).")
+    p.add_argument("--input", "-i", default="input.xlsx", help="Input Excel file (default: input.xlsx)")
+    p.add_argument("--output", "-o", default="cleaned_output.xlsx", help="Output Excel file")
+    p.add_argument("--sheet", "-s", default=None, help="Sheet name or index (passed to pandas.read_excel)")
+    p.add_argument(
+        "--fill-method",
+        "-f",
+        choices=("ffill", "bfill", "none"),
+        default="ffill",
+        help="Missing-value fill method: ffill (default), bfill, or none",
+    )
+    return p.parse_args(argv)
+
+
+def main(argv=None):
+    args = parse_args(argv)
+    input_path = Path(args.input)
+    if not input_path.exists():
+        LOG.error("❌ Input file not found: %s", input_path)
+        sys.exit(2)
+
+    try:
+        df = pd.read_excel(input_path, sheet_name=args.sheet)
+    except Exception as exc:
+        LOG.error("❌ Failed to read Excel file: %s", exc)
+        sys.exit(3)
+
+    cleaned = clean_df(df, fill_method=args.fill_method)
+
+    try:
+        cleaned.to_excel(args.output, index=False)
+    except Exception as exc:
+        LOG.error("❌ Failed to save output file: %s", exc)
+        sys.exit(4)
+
+    LOG.info("✅ Cleaned file saved to: %s (fill-method=%s)", args.output, args.fill_method)
+
+
+if __name__ == "__main__":
+    main()
